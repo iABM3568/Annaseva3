@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import authRoutes from "./routes/auth.routes.js";
+import { notFound, errorHandler } from "./middleware/error.js";
 
 // Create the Express application: think of it as "the waiter".
 const app = express();
@@ -16,6 +18,13 @@ app.get("/api/health", (req, res) => {
     // status(200) = "OK". json() sends the object back as JSON.
     res.status(200).json({ status: "ok", time: new Date().toISOString() });
 });
+
+// Everything under /api/auth is handled by authRoutes.
+app.use("/api/auth", authRoutes);
+
+// ORDER MATTERS: these two must come AFTER all routes.
+app.use(notFound);
+app.use(errorHandler);
 
 // Export the app so server.js (and later, tests) can use it.
 export default app;
