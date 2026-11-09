@@ -1,5 +1,5 @@
-import express from 'express';
-import cors from 'cors';
+import express from "express";
+import cors from "cors";
 
 // Create the Express application: think of it as "the waiter".
 const app = express();
@@ -12,9 +12,9 @@ app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
 // ROUTE: when someone sends GET /api/health, run this function.
-app.get('/api/health', (req, res) => {
-  // status(200) = "OK". json() sends the object back as JSON.
-  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+app.get("/api/health", (req, res) => {
+    // status(200) = "OK". json() sends the object back as JSON.
+    res.status(200).json({ status: "ok", time: new Date().toISOString() });
 });
 
 // Export the app so server.js (and later, tests) can use it.
