@@ -50,3 +50,21 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 
 - **Decision:** Allow only the current IP for development. Use a strong, randomly generated database-user password.
 - **Why:** Defence in depth. When deploying to Render (Day 5), `0.0.0.0/0` may be needed because the free tier has no fixed IP; treat that as a known, documented risk (mitigated by DB authentication), not a permanent default.
+
+## D-010 — Token in `localStorage` vs `httpOnly` cookie (Day 2)
+
+- **Options:** (a) `localStorage` + `Authorization: Bearer` header; (b) `httpOnly` cookie set by the server.
+- **Choice:** (a) `localStorage`, for learning speed and simpler cross-origin setup (Vercel client ↔ Render API).
+- **Trade-off:** Any injected script (XSS) can read `localStorage` and steal the token. `httpOnly` cookies hide it from scripts but bring CSRF concerns and cookie config (`SameSite`, `Secure`, CORS credentials). Mitigations: 7-day expiry, never render untrusted HTML, revisit before a real launch.
+
+## D-011 — Password hashing with bcrypt (cost 12), JWT for sessions (Day 2)
+
+- **Decision:** `bcryptjs` with cost 12 in a Mongoose `pre("save")` hook; stateless JWT `{ id, role }` signed with `JWT_SECRET`, valid 7 days.
+- **Why:** Hashes can't be reversed, salt defeats precomputed tables, cost slows brute force. JWT means no session store on the server.
+- **Trade-off:** A JWT can't be revoked before it expires (we do re-check that the user still exists in `protect`). bcrypt only uses the first 72 bytes of a password, so Zod caps passwords at 72.
+- **Rule:** `JWT_SECRET` is a 96-hex-char random value in `.env` only. If it leaks, rotate it (every existing token becomes invalid).
+
+## D-012 — Validation at the edge with Zod; explicit field picking (Day 2)
+
+- **Decision:** `validate(schema)` middleware parses input, rejects with `400` and a list of `{ field, message }`, and passes only cleaned data as `req.valid`. Controllers never read `req.body` directly.
+- **Why:** "Parse, don't trust." Zod strips unknown keys, and controllers list fields explicitly, so mass assignment (`"role": "admin"`, `"isAdmin": true`) is blocked twice.

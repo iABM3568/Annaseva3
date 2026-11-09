@@ -60,3 +60,68 @@ Purpose of each backend file (`server.js`, `app.js`, `config/db.js`, `.env`, `.e
 >
 
 **Tomorrow's first task:**
+
+---
+
+## Day 2: Users and Authentication   (2026-11-09)
+
+**Hours worked:**
+
+**What I built:**
+- `User` model (bcrypt hash in `pre("save")`, `select: false`, `toJSON` strips password)
+- Zod schemas + `validate` middleware (`req.valid`)
+- `generateToken` (JWT `{ id, role }`, 7 days)
+- `register`, `login`, `getMe` controllers; `/api/auth` routes
+- `protect` / `restrictTo` middleware; JSON `notFound` + `errorHandler`
+- Request collection: `docs/api/AnnaSeva.postman_collection.json`
+
+**What confused me:**
+
+**Errors I hit and how I fixed them:**
+
+**AI log:** prompt -> what I changed -> what I learned
+
+### Self-ask answers (write them WITHOUT looking at the code)
+
+1. What is the difference between authentication and authorization? Give an AnnaSeva example of each.
+   >
+
+2. Why do we *hash* passwords instead of encrypting them?
+   >
+
+3. What are the three parts of a JWT? Which part is secret?
+   >
+
+4. Can a user edit their own token's role to `admin`? Why or why not?
+   >
+
+5. What is `JWT_SECRET` for, and what happens if it leaks?
+   >
+
+6. What's the difference between `401` and `403`?
+   >
+
+7. Why does login return the same error for "wrong email" and "wrong password"?
+   >
+
+8. What does `select: false` do on the password field, and where do we override it?
+   >
+
+9. Why does `restrictTo` have to come after `protect`?
+   >
+
+10. Why validate on the server when the form will also validate?
+    >
+
+11. What is *mass assignment*, and how did we prevent it?
+    >
+
+12. What's the trade-off of storing the token in `localStorage`?
+    >
+
+### Explain-back (say it aloud, then write 3 sentences)
+
+Register → Login → `protect` → `restrictTo`:
+>
+
+**Tomorrow's first task:**
