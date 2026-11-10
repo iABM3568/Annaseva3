@@ -1,2 +1,8 @@
 /* This single line loads all of Tailwind's utility classes. */
 @import "tailwindcss";
+
+/* Visible keyboard focus everywhere. Never remove an outline without replacing it. */
+:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}

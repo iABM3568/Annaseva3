@@ -78,7 +78,7 @@ export default function DonorDashboard() {
     <main className="mx-auto max-w-3xl p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My listings</h1>
-        <Link to="/donor/new" className="rounded bg-green-600 px-3 py-2 text-white">Post food</Link>
+        <Link to="/donor/new" className="inline-flex min-h-11 items-center rounded bg-green-700 px-3 py-2 text-white">Post food</Link>
       </div>
 
       <Notice message={notice} onClose={() => setNotice('')} />
@@ -94,11 +94,11 @@ export default function DonorDashboard() {
             {active.map((listing) => (
               <ListingCard key={listing._id} listing={listing}>
                 {listing.status === 'claimed' && (
-                  <button type="button" onClick={() => act(listing._id, 'complete')} className="rounded bg-blue-600 px-3 py-1 text-white">
+                  <button type="button" onClick={() => act(listing._id, 'complete')} className="inline-flex min-h-11 items-center rounded bg-blue-600 px-3 py-2 text-white">
                     Mark picked up
                   </button>
                 )}
-                <button type="button" onClick={() => act(listing._id, 'cancel')} className="rounded border border-red-300 px-3 py-1 text-red-700">
+                <button type="button" onClick={() => act(listing._id, 'cancel')} className="inline-flex min-h-11 items-center rounded border border-red-300 px-3 py-2 text-red-700">
                   Cancel
                 </button>
               </ListingCard>

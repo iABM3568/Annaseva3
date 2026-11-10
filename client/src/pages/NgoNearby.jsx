@@ -123,13 +123,13 @@ export default function NgoNearby() {
       <h1 className="text-2xl font-bold">Food near you</h1>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={locate} disabled={geoLoading} className="rounded bg-gray-100 px-3 py-1">
+        <button type="button" onClick={locate} disabled={geoLoading} className="inline-flex min-h-11 items-center rounded bg-gray-100 px-3 py-2">
           {geoLoading ? 'Finding you...' : 'Use my location'}
         </button>
         <label className="text-sm">
           Radius{' '}
           <select value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value))}
-            className="rounded border border-gray-300 p-1">
+            className="min-h-11 rounded border border-gray-300 p-1 text-base">
             {[2, 5, 10, 25, 50].map((km) => <option key={km} value={km}>{km} km</option>)}
           </select>
         </label>
@@ -169,7 +169,7 @@ export default function NgoNearby() {
                   <ListingCard key={listing._id} listing={listing}>
                     <span className="self-center text-sm text-gray-600">{formatDistance(km)} away</span>
                     <button type="button" onClick={() => handleClaim(listing)} disabled={claimingId === listing._id}
-                      className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50">
+                      className="inline-flex min-h-11 items-center rounded bg-green-700 px-3 py-2 text-white disabled:opacity-50">
                       {claimingId === listing._id ? 'Claiming...' : 'Claim'}
                     </button>
                   </ListingCard>

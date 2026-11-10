@@ -26,7 +26,7 @@ const FOOD_TYPES = [
   { value: 'mixed', label: 'Mixed' },
 ];
 
-const inputClass = 'mt-1 w-full rounded border border-gray-300 p-2';
+const inputClass = 'mt-1 min-h-11 w-full rounded border border-gray-300 p-2';
 
 export default function NewListing() {
   const navigate = useNavigate();
@@ -34,6 +34,8 @@ export default function NewListing() {
   const [form, setForm] = useState(makeInitialForm); // function form = computed once
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // True after a submit attempt without a location. The hint hides itself as soon as a location arrives.
+  const [needsLocation, setNeedsLocation] = useState(false);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -42,7 +44,7 @@ export default function NewListing() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!coords) {
-      setError('Please share your pickup location first.');
+      setNeedsLocation(true); // shown next to the location button until a location arrives
       return;
     }
     setError('');
@@ -124,14 +126,17 @@ export default function NewListing() {
 
         <div className="rounded border border-gray-200 p-3">
           {/* type="button": otherwise clicking it would SUBMIT the form */}
-          <button type="button" onClick={locate} disabled={geoLoading} className="rounded bg-gray-100 px-3 py-1">
+          <button type="button" onClick={locate} disabled={geoLoading} className="inline-flex min-h-11 items-center rounded bg-gray-100 px-3 py-2">
             {geoLoading ? 'Finding you...' : coords ? 'Update my location' : 'Use my current location'}
           </button>
           {coords && <p className="mt-2 text-sm text-green-700">Location saved ({coords.lat.toFixed(4)}, {coords.lng.toFixed(4)})</p>}
           {geoError && <p className="mt-2 text-sm text-red-700">{geoError}</p>}
+          {needsLocation && !coords && (
+            <p role="alert" className="mt-2 text-sm text-red-700">Please share your pickup location first.</p>
+          )}
         </div>
 
-        <button type="submit" disabled={submitting} className="w-full rounded bg-green-600 p-2 font-medium text-white disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="min-h-11 w-full rounded bg-green-700 p-2 font-medium text-white disabled:opacity-50">
           {submitting ? 'Posting...' : 'Post listing'}
         </button>
       </form>

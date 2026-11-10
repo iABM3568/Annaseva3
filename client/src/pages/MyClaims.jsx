@@ -63,7 +63,7 @@ export default function MyClaims() {
                   <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="rounded bg-blue-600 px-3 py-1 text-white">
+                    className="inline-flex min-h-11 items-center rounded bg-blue-600 px-3 py-2 text-white">
                     Get directions
                   </a>
                 )}

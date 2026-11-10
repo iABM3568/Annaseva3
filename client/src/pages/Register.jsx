@@ -84,7 +84,7 @@ export default function Register() {
             className="mt-1 w-full rounded border border-gray-300 p-2" />
         </label>
         <button type="submit" disabled={submitting}
-          className="w-full rounded bg-green-600 p-2 font-medium text-white disabled:opacity-50">
+          className="min-h-11 w-full rounded bg-green-700 p-2 font-medium text-white disabled:opacity-50">
           {submitting ? 'Creating account...' : 'Create account'}
         </button>
       </form>

@@ -18,7 +18,7 @@ export default function Navbar() {
     <nav className="flex flex-wrap items-center justify-between gap-2 bg-green-700 px-4 py-3 text-white">
       <Link to="/" className="text-lg font-bold">AnnaSeva</Link>
 
-      <div className="flex flex-wrap items-center gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-x-4 text-sm [&>a]:py-3 [&>button]:py-3">
         {!user && (
           <>
             <Link to="/login">Log in</Link>
@@ -39,7 +39,7 @@ export default function Navbar() {
         )}
         {user && (
           <>
-            <span className="opacity-80">{user.name}</span>
+            <span>{user.name}</span>
             {/* Live badge: is the real-time connection up? */}
             <span title={connected ? 'Live updates on' : 'Reconnecting...'} className="text-xs" aria-live="polite">
               {connected ? '● Live' : '○ Offline'}
