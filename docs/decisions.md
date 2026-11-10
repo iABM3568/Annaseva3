@@ -156,3 +156,28 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 - **Bug in the plan's code:** With location denied, `NgoNearby` rendered no map, so "click the map to search" (test #2) was impossible.
 - **Decision:** On a geolocation error, centre the search on `DEFAULT_CENTER` (Pune, same as `seed.js`) and say so: "Location permission was denied. Showing Pune. You can still click the map to pick a place."
 - **Also verified:** stale-response guard (`latestRequest`): with the 50 km request artificially delayed 1.5 s and the radius switched to 2 km, the late 50 km answer was ignored.
+
+## D-026 — Socket.IO vs polling vs SSE (Day 8)
+
+| Option | How | Server cost (≈1,000 open screens) | Fit for AnnaSeva |
+|---|---|---|---|
+| Polling (10 s) | Client asks "anything new?" | ~100 requests/s, mostly "no" | Simplest; up to 10 s stale. Our fallback. |
+| SSE | One-way stream server → client | 1,000 open HTTP connections | Good for "new food" pushes; no rooms/reconnect helpers built in. |
+| **Socket.IO (chosen)** | Two-way connection + rooms + auto-reconnect | 1,000 open connections, near-zero traffic when idle | Instant updates, rooms for privacy, reconnection handled. |
+
+- **Choice:** Socket.IO, for instant claim/new-food updates and rooms. **Trade-off:** more moving parts (own CORS, cleanup, reconnect logic) and a long-lived connection per tab.
+- **Rules we follow:**
+  - Sockets authenticate with the same JWT (handshake `auth.token`, socket middleware). Verified: no token / forged token → `Unauthorized`.
+  - Rooms: `user:<id>` (every user, all their tabs) and `ngos` (all NGOs). Donors are only in their own room.
+  - Emit **only after** the database write succeeded.
+  - Data minimisation: other NGOs get `listing:updated` **without `claimedBy`**; only the donor and the claimer get who claimed.
+  - Sockets are for speed; the API/database is the source of truth. Every page re-fetches on `reconnect`.
+  - Every `socket.on` has a matching `socket.off` in the effect cleanup.
+- **Verified (Day 8 two-user tests):** new listing appeared on the NGO screen without refresh; out-of-radius listing ignored; NGO B's claim removed the card from NGO A instantly and NGO A's payload had no `claimedBy`; donor got "NGO B Test claimed …" live; "picked up" turned NGO A's My claims card `completed` live; server down → "○ Offline", back → "● Live" in ~2 s and a listing added during the outage appeared via the re-fetch; after 5 page switches still exactly 1 handler per event; logout closed the WebSocket.
+
+## D-027 — One server for now; how real-time would scale (Day 8)
+
+- Each socket lives on **one** server process. With two instances, an event emitted on server A never reaches a user connected to server B.
+- **Fix when needed:** the Socket.IO **Redis adapter** (every instance publishes/subscribes events through Redis) plus **sticky sessions** (the HTTP long-polling handshake must keep hitting the same instance).
+- **What still works with many servers:** the atomic claim (D-017). Its guarantee lives in MongoDB, not in server memory, so exactly one claim wins regardless of instance.
+- **Decision:** don't build it. One Render instance is right at our scale; revisit if we ever run more than one.
