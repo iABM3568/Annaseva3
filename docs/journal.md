@@ -198,3 +198,58 @@ Register → Login → `protect` → `restrictTo`:
 
 ### Explain-back (rate limiting, trust proxy, stats pipeline)
 >
+
+---
+
+## Day 10: Docs, Demo and Interview Prep   (2026-11-10)
+
+### Done today
+
+- Repo clean-up: no debug logs or TODOs left (only "Server running" / "MongoDB connected"); complete `.env.example` files; only the two `.env.example` files tracked; Node `>=22` in both `package.json`s; MIT `LICENSE`.
+- `README.md`: problem, features, 5 screenshots (desktop + 390 px phone), stack, Mermaid architecture diagram, the "NGO clicks Claim" flow, engineering problems, decisions table, run-locally steps, env table, tests, API overview, roadmap.
+- **Fresh-clone test:** cloned into an empty folder and followed only the README: server healthy, client served, seed printed demo logins, 23/23 tests passed, demo NGO found 15 listings. Found one README bug (step 3 said `cd server` while the terminal was inside `client/`); fixed.
+- `scripts/cleanup-demo.js`: tested on dev after seeding with a private `DEMO_PASSWORD` → "Deleted 12 listings and 2 demo users", 0 demo users left.
+- `docs/interview-notes.md`: pitch, architecture, 5 hard problems, 5 trade-offs, honest numbers, resume bullets, LinkedIn draft, GitHub About text.
+
+### Still to do (needs me / the live site)
+
+- [ ] Deploy (Render + Vercel + `VITE_SOCKET_URL`), then add the live link to the README
+- [ ] Seed production with a private password **30 minutes before** a demo; run `cleanup-demo.js --force` after
+- [ ] Record the 2-minute demo video (Appendix D script), upload, link it in the README
+- [ ] GitHub About box + pin the repo; tag `v1.0.0` once the README has the live link
+- [ ] Mock interview: 12 questions out loud, recorded, weak answers on my study list
+
+### Progress tracker (Appendix H)
+
+| Day | Theme | Built and committed | Tests pass | Explain-back done | Notes / blockers |
+|---|---|:-:|:-:|:-:|---|
+| 1 | Foundations, Git, first server | ✅ | ✅ | [ ] | |
+| 2 | Users and authentication | ✅ | ✅ | [ ] | |
+| 3 | Listings API | ✅ | ✅ 21/21 | [ ] | |
+| 4 | Claim system and system-design lab | ✅ | ✅ race 1×200 / 19×409 | [ ] | |
+| 5 | React, login screens, first deploy | ✅ local | ✅ 10/10 local | [ ] | Deploy not done yet |
+| 6 | Donor experience | ✅ | ✅ 13/13 local | [ ] | Fixed: logout on network error |
+| 7 | NGO experience (map and claim) | ✅ | ✅ 13/13 local | [ ] | Fixed: no map when location denied |
+| 8 | Real-time updates | ✅ | ✅ 13/13 local | [ ] | Needs `VITE_SOCKET_URL` on Vercel |
+| 9 | Hardening, polish, buffer | ✅ | ✅ 23 tests, 12/14 rows | [ ] | Live smoke + trust proxy pending |
+| 10 | Docs, demo, interview prep | ✅ docs | ✅ fresh clone | [ ] | Video, prod seed, tag pending |
+
+### Retrospective (my own words)
+
+**What was hardest?**
+>
+
+**What surprised me?**
+>
+
+**Which concept can I now explain well?**
+>
+
+**Which one am I still shaky on?**
+>
+
+**What would I do differently if I started again?**
+>
+
+**My next step (Appendix E or a new project):**
+>
