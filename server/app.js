@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
+import listingRoutes from "./routes/listing.routes.js";
 import { notFound, errorHandler } from "./middleware/error.js";
 
 // Create the Express application: think of it as "the waiter".
@@ -21,6 +22,8 @@ app.get("/api/health", (req, res) => {
 
 // Everything under /api/auth is handled by authRoutes.
 app.use("/api/auth", authRoutes);
+// Everything under /api/listings is handled by listingRoutes (login required).
+app.use("/api/listings", listingRoutes);
 
 // ORDER MATTERS: these two must come AFTER all routes.
 app.use(notFound);
