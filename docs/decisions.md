@@ -124,3 +124,16 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 - **Decision:** Deploy on Day 5 with only login/register: API on Render (`server/`), client on Vercel (`client/`, SPA rewrite in `vercel.json`), production data in Atlas database `annaseva` (dev stays `annaseva_dev`).
 - **Why:** First-deploy problems (CORS origin, env vars, SPA 404s on refresh, cold starts, case-sensitive imports on Linux) are far easier to debug when the app is tiny. After this, every deploy is just `git push`.
 - **Trade-off:** Render's free tier has no fixed IP, so Atlas allows `0.0.0.0/0`; the database is still protected by username/password and TLS (see D-009). Production uses its own new `JWT_SECRET`.
+
+## D-021 — UI waits for the server instead of guessing results (Day 6)
+
+- **Decision:** After "Mark picked up" or "Cancel", the dashboard replaces that one listing with the listing **the server returned** (pessimistic update); it never sets `status` itself.
+- **Why:** The server is the source of truth. If the action was refused (409, 404) or something changed meanwhile, the screen can't show a lie.
+- **Trade-off:** The UI updates after a round trip, not instantly. Fine at our scale; revisit (optimistic update + rollback) only if it feels slow.
+- **Also:** The form converts `datetime-local` (local time, no zone) to UTC with `new Date(value).toISOString()`; we store and send UTC and display in local time. "Expired" is derived on the client from `expiresAt`, never stored.
+
+## D-022 — An unreachable server must not log the user out (Day 6)
+
+- **Bug found in testing:** On page load, `AuthContext` cleared the session on *any* `/auth/me` failure. With the API down (or Render restarting/redeploying), refreshing logged users out.
+- **Decision:** Clear the session only on `401` (token expired or tampered). On a network error, keep the saved user; each page shows "Cannot reach the server" with **Try again**.
+- **Verified:** API down → dashboard error + retry, still logged in; API back → Try again loads data; tampered token → still logged out.
