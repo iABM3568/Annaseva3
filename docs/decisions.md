@@ -181,3 +181,46 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 - **Fix when needed:** the Socket.IO **Redis adapter** (every instance publishes/subscribes events through Redis) plus **sticky sessions** (the HTTP long-polling handshake must keep hitting the same instance).
 - **What still works with many servers:** the atomic claim (D-017). Its guarantee lives in MongoDB, not in server memory, so exactly one claim wins regardless of instance.
 - **Decision:** don't build it. One Render instance is right at our scale; revisit if we ever run more than one.
+
+## D-028 — helmet + body limit + rate limiting (Day 9)
+
+- **Options:** rely only on validation/auth; add security headers; add rate limits; put a WAF/CDN in front (paid).
+- **Choice:** `helmet()` (safe headers, removes `X-Powered-By`), `express.json({ limit: '10kb' })` (413 on big bodies), `apiLimiter` (1000 req / 15 min / IP, raisable via `RATE_LIMIT_MAX`) and a strict `authLimiter` (20 **failed** register/login attempts / 15 min / IP, `skipSuccessfulRequests`). `/api/health` sits before the limiter so uptime monitors are never blocked.
+- **Why the login limit is stricter:** login is the one place an attacker can try thousands of password guesses; real users who type the right password never use the budget.
+- **Trade-off:** counters live in this process's memory: reset on restart, and with two servers each would count separately (a shared store such as Redis would be needed). Fine for one instance. People sharing one Wi-Fi share one IP budget.
+- **Verified locally:** 20 × 401 then 429 with `{ message: "Too many requests…" }`, shown in the React login form; restart → login works; 20 kb body → 413; `{ not json` → 400; `RateLimit-*` headers present; no `X-Powered-By`.
+
+## D-029 — JWT in `localStorage` vs `httpOnly` cookie, revisited (Day 9)
+
+- Same choice as D-010: `localStorage` + `Authorization: Bearer`, for simplicity across two domains (Vercel ↔ Render).
+- **Exposure:** any script running on our page (XSS) could read the token. **Main defence:** React escapes text by default; we never use `dangerouslySetInnerHTML`; helmet sets safe headers on API responses.
+- **Alternative:** `httpOnly` + `Secure` + `SameSite` cookie (unreadable by scripts) with CSRF protection and cross-site cookie settings. Revisit before real users.
+
+## D-030 — `trust proxy = 1` (Day 9)
+
+- **Why:** on Render, requests arrive via Render's proxy. Without `trust proxy`, `req.ip` is the proxy's address and the rate limiter would treat **every user as one person** (20 bad logins from anyone would block everyone).
+- **Status:** set to `1`. ⏳ **Still to verify on the live site** (log `req.ip` on `/api/health` once, compare with my real public IP, then remove the log). Locally it can't be verified because there is no proxy.
+
+## D-031 — `/api/stats` computed live, not cached (Day 9)
+
+- **Choice:** one aggregation per request (`$match: completed` → `$group: $sum quantity, count`), public, no personal data. Verified: 0/0 on a fresh DB → 20/1 after completing a 20-meal listing.
+- **Trade-off:** each landing-page view costs one DB query. A 30 s in-memory cache would remove that but make the counter up to 30 s stale (and per-instance with two servers). For a live demo the counter should move instantly, so **no cache** for now.
+
+## Day 9 hand security audit
+
+| # | Check | Result |
+|---|---|---|
+| 1 | `.env` never in Git | ✅ `git log --all -- server/.env client/.env` empty; 0 tracked `.env` files |
+| 2 | Production `JWT_SECRET` long, random, different from dev | ⏳ Check in Render's Environment tab |
+| 3 | Passwords hashed, never returned | ✅ register response has no `password`; DB value is a bcrypt `$2…$12$` hash |
+| 4 | No self-promotion | ✅ `role: "admin"` → 400 |
+| 5 | Ownership enforced | ✅ donor B cancel/complete donor A's listing → 404 / 404 |
+| 6 | Roles enforced | ✅ NGO creates listing → 403; donor claims → 403 |
+| 7 | Sensitive routes need a token | ✅ `/listings/mine` without token → 401 |
+| 8 | Server-side validation | ✅ bad payload sent straight to the API → 400 naming 8 fields |
+| 9 | Errors don't leak internals | ✅ (code review) unexpected errors → generic "Something went wrong on the server"; details only in server log |
+| 10 | CORS limited to the front end | ⏳ `CLIENT_URL` on Render = exact Vercel URL |
+| 11 | DB user least privilege | ⏳ Atlas > Database Access: read/write on `annaseva` only |
+| 12 | Dependencies reviewed | ✅ `npm audit`: 0 vulnerabilities in `server/` and `client/` |
+| 13 | No demo accounts in production | ⏳ Day 10 (seed production safely, then remove) |
+| 14 | `X-Powered-By` gone | ✅ locally; ⏳ re-check with `curl -I` on the live API |

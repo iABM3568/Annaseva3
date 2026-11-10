@@ -154,3 +154,47 @@ Register → Login → `protect` → `restrictTo`:
 >
 
 **Tomorrow's first task:**
+
+---
+
+## Day 9: Hardening, Polish and Buffer   (2026-11-10)
+
+### Buffer list: unfinished or shaky from Days 1 to 8
+
+| # | Item | From | Status |
+|---|---|---|---|
+| 1 | **First deploy not confirmed** (Render API + Vercel client), so no Day 5–8 test has run on the live site | Day 5 | ⏳ Mine to do: needed for the live smoke test and `trust proxy` check |
+| 2 | `VITE_SOCKET_URL` on Vercel + redeploy | Day 8 | ⏳ Mine to do (after #1) |
+| 3 | Homework written by Claude, not me: `Register.jsx`, the `NewListing` form fields | Days 5–6 | ⏳ Rewrite from memory and compare |
+| 4 | "Please share your pickup location first" stays visible after location is shared | Day 6 | ✅ Fixed today (polish) |
+| 5 | White text on `green-600` fails contrast; small (≈32 px) buttons | Days 5–7 | ✅ Fixed today (polish) |
+| 6 | Self-ask answers and explain-backs for Days 2–8 not written | Days 2–8 | ⏳ Mine to do |
+| 7 | Real two-window test (normal + incognito) of claim conflict and live updates | Days 7–8 | ⏳ Mine to do (verified by scripts, not by hand) |
+
+### Day 9 results (local)
+
+| # | Test | Result |
+|---|---|---|
+| 1 | `npm test` | ✅ 23 passing, 0 failing |
+| 2 | Break a rule on purpose | ✅ `MAX_HOURS_AHEAD` 24→48, removing `blankIsMissing`, deleting the expiry-after-preparation rule: each made exactly the matching test fail; undo → 23 pass. (The plan's "expiry before preparation" test also tripped other rules, so it would have passed even with its rule deleted; rewritten to break only that rule.) |
+| 3 | `rate-limit-check.js` | ✅ 20 × 401 then 5 × 429 |
+| 4 | 429 body + React form | ✅ "Too many requests. Please wait a few minutes and try again." shown on the login page |
+| 5 | Restart → correct login | ✅ |
+| 6 | 20 kb body | ✅ 413 "Request body too large" |
+| 7 | `{ not json` | ✅ 400 |
+| 8 | `/api/stats` fresh | ✅ `{ mealsRescued: 0, pickups: 0 }` |
+| 9 | Complete a 20-meal listing | ✅ `{ mealsRescued: 20, pickups: 1 }`; landing shows "20 meals rescued across 1 pickup" |
+| 10 | Landing with API off | ✅ page renders, counter hidden, no error banner |
+| 11 | Lighthouse (mobile) | ✅ Accessibility 100, Best practices 100 on `/`, `/login`, `/register` (logged-in pages checked by hand: contrast, 44 px targets, 16 px inputs, no sideways scroll at 360/390 px) |
+| 12 | Keyboard only: log in, post, claim | ✅ visible 3 px blue focus outline; found and fixed: 15 map pins were Tab stops before the first Claim (22 → 7 stops) |
+| 13 | Live smoke test | ⏳ needs the deploy |
+| 14 | `trust proxy` check | ⏳ needs the deploy |
+| — | Race test on final code | ✅ 1 × 200, 19 × 409 |
+
+**Top polish fixes:** white-on-green contrast (`green-600` → `green-700`); 44 px tap targets everywhere (buttons, links, radius and food-type selects); visible keyboard focus; the "share your location first" hint now disappears once a location is shared; map `h-72 sm:h-96`; radius select 16 px text (no iPhone zoom); map pins out of the Tab order; "1 pickup" singular; AnnaSeva favicon.
+
+### What I learned (my own words)
+>
+
+### Explain-back (rate limiting, trust proxy, stats pipeline)
+>
