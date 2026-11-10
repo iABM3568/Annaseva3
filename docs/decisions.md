@@ -137,3 +137,22 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 - **Bug found in testing:** On page load, `AuthContext` cleared the session on *any* `/auth/me` failure. With the API down (or Render restarting/redeploying), refreshing logged users out.
 - **Decision:** Clear the session only on `401` (token expired or tampered). On a network error, keep the saved user; each page shows "Cannot reach the server" with **Try again**.
 - **Verified:** API down → dashboard error + retry, still logged in; API back → Try again loads data; tampered token → still logged out.
+
+## D-023 — Distance calculated on the client (Day 7)
+
+- **Decision:** The server sorts by distance (`$near`) but doesn't return the number; the client computes it with the haversine formula (`utils/geo.js`) for the "2.5 km away" label.
+- **Why:** Keeps the API simple (`find` + `$near`). Haversine is accurate to well under 1% at our ≤ 50 km radius.
+- **Alternative:** `aggregate([{ $geoNear: { distanceField } }])` returns the server-side distance; switch if other clients need it.
+- **Coordinate order:** GeoJSON is `[lng, lat]`, Leaflet is `[lat, lng]`. The swap happens in ONE helper, `listingLatLng`; Google Maps directions use `lat,lng` built from the same stored array.
+
+## D-024 — Pickup address visible before claim (privacy trade-off) (Day 7)
+
+- **Current:** Every logged-in NGO sees each listing's exact pickup address and pin before claiming.
+- **Why accepted for now:** Only verified-by-login NGOs can see `/nearby`; donors are businesses posting a pickup point; it keeps the demo simple.
+- **Risk:** Anyone who registers as an NGO can see where food is. **Stricter design:** return an approximate area (e.g. coordinates rounded to ~1 km, no address) from `/nearby`, and reveal the exact address only to the claimer via `/claimed`.
+
+## D-025 — Fall back to a default city when location is denied (Day 7)
+
+- **Bug in the plan's code:** With location denied, `NgoNearby` rendered no map, so "click the map to search" (test #2) was impossible.
+- **Decision:** On a geolocation error, centre the search on `DEFAULT_CENTER` (Pune, same as `seed.js`) and say so: "Location permission was denied. Showing Pune. You can still click the map to pick a place."
+- **Also verified:** stale-response guard (`latestRequest`): with the 50 km request artificially delayed 1.5 s and the radius switched to 2 km, the late 50 km answer was ignored.
