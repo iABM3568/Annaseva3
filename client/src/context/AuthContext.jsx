@@ -44,8 +44,11 @@ export function AuthProvider({ children }) {
       try {
         const { data } = await api.get('/auth/me');
         setUser(data.user);
-      } catch {
-        clearSession(); // token expired or tampered with
+      } catch (err) {
+        // Log out ONLY if the server says the token is bad (401: expired or tampered with).
+        // If the server is just unreachable (offline, restarting, cold start), keep the saved
+        // user: the page itself will show "Cannot reach the server" with a Try again button.
+        if (err.response?.status === 401) clearSession();
       } finally {
         setLoading(false); // finally runs whether it worked or failed
       }
