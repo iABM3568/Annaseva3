@@ -1,5 +1,11 @@
 import Listing from "../models/Listing.js";
 import { NEARBY_LIMIT, LIST_LIMIT } from "../constants/listing.js";
+import { emitListingNew, emitListingUpdated } from "../sockets/emit.js";
+
+// Reusable helper: claim/complete/cancel all return readable donor + claimer info
+// (the donor's screen shows WHO claimed; the NGO's screen shows WHICH donor).
+const withParties = (query) =>
+    query.populate("donor", "name organization").populate("claimedBy", "name organization");
 
 // DONOR: create a listing
 export async function createListing(req, res) {
@@ -10,6 +16,8 @@ export async function createListing(req, res) {
         donor: req.user.id, // from the verified token, NEVER from the request body
         location: { type: "Point", coordinates: [longitude, latitude] }, // GeoJSON order!
     });
+    await listing.populate("donor", "name organization"); // NGOs' screens need the donor's name
+    emitListingNew(listing); // announce AFTER the database write succeeded
 
     res.status(201).json({ listing });
 }
@@ -74,20 +82,23 @@ async function failTransition(res, existsFilter, conflictMessage) {
 export async function claimListing(req, res) {
     const { id } = req.params;
 
-    const listing = await Listing.findOneAndUpdate(
-        // CONDITION (the guard): only match if it is STILL available and NOT expired
-        { _id: id, status: "available", expiresAt: { $gt: new Date() } },
-        // CHANGE: applied only if the condition matched
-        { status: "claimed", claimedBy: req.user.id, claimedAt: new Date() },
-        // returnDocument: 'after' returns the document AFTER the update (the default is the version before).
-        { returnDocument: "after" }
-    ).populate("donor", "name organization");
+    const listing = await withParties(
+        Listing.findOneAndUpdate(
+            // CONDITION (the guard): only match if it is STILL available and NOT expired
+            { _id: id, status: "available", expiresAt: { $gt: new Date() } },
+            // CHANGE: applied only if the condition matched
+            { status: "claimed", claimedBy: req.user.id, claimedAt: new Date() },
+            // returnDocument: 'after' returns the document AFTER the update (the default is the version before).
+            { returnDocument: "after" }
+        )
+    );
 
     // null means nothing matched: someone was faster, or it expired, or it doesn't exist.
     if (!listing) {
         return failTransition(res, { _id: id }, "This listing was already claimed or has expired");
     }
 
+    emitListingUpdated(listing); // only after the atomic update really happened
     res.json({ listing });
 }
 
@@ -95,16 +106,19 @@ export async function claimListing(req, res) {
 export async function completeListing(req, res) {
     const { id } = req.params;
 
-    const listing = await Listing.findOneAndUpdate(
-        { _id: id, donor: req.user.id, status: "claimed" }, // donor: req.user.id = ownership check (prevents IDOR)
-        { status: "completed", completedAt: new Date() },
-        { returnDocument: "after" }
-    ).populate("claimedBy", "name organization");
+    const listing = await withParties(
+        Listing.findOneAndUpdate(
+            { _id: id, donor: req.user.id, status: "claimed" }, // donor: req.user.id = ownership check (prevents IDOR)
+            { status: "completed", completedAt: new Date() },
+            { returnDocument: "after" }
+        )
+    );
 
     if (!listing) {
         // Look only among THIS donor's listings, so other people's listings stay invisible (404).
         return failTransition(res, { _id: id, donor: req.user.id }, "Only a claimed listing can be marked as picked up");
     }
+    emitListingUpdated(listing);
     res.json({ listing });
 }
 
@@ -112,14 +126,17 @@ export async function completeListing(req, res) {
 export async function cancelListing(req, res) {
     const { id } = req.params;
 
-    const listing = await Listing.findOneAndUpdate(
-        { _id: id, donor: req.user.id, status: { $in: ["available", "claimed"] } },
-        { status: "cancelled" },
-        { returnDocument: "after" }
-    ).populate("claimedBy", "name organization");
+    const listing = await withParties(
+        Listing.findOneAndUpdate(
+            { _id: id, donor: req.user.id, status: { $in: ["available", "claimed"] } },
+            { status: "cancelled" },
+            { returnDocument: "after" }
+        )
+    );
 
     if (!listing) {
         return failTransition(res, { _id: id, donor: req.user.id }, "This listing can no longer be cancelled");
     }
+    emitListingUpdated(listing);
     res.json({ listing });
 }
