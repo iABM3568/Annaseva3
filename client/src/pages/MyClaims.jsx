@@ -5,11 +5,13 @@ import ListingCard from '../components/ListingCard';
 import Loader from '../components/Loader';
 import ErrorMessage from '../components/ErrorMessage';
 import EmptyState from '../components/EmptyState';
+import { useSocket } from '../context/SocketContext';
 
 export default function MyClaims() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { socket } = useSocket();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -27,6 +29,19 @@ export default function MyClaims() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // LIVE UPDATES: e.g. the donor marks my claim as picked up.
+  useEffect(() => {
+    if (!socket) return;
+    const handleUpdated = (listing) =>
+      setListings((previous) => previous.map((l) => (l._id === listing._id ? listing : l)));
+    socket.on('listing:updated', handleUpdated);
+    socket.io.on('reconnect', load);
+    return () => {
+      socket.off('listing:updated', handleUpdated);
+      socket.io.off('reconnect', load);
+    };
+  }, [socket, load]);
 
   if (loading) return <Loader />;
   if (error) return <main className="p-4"><ErrorMessage message={error} onRetry={load} /></main>;

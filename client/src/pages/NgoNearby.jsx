@@ -9,9 +9,11 @@ import Loader from '../components/Loader';
 import ErrorMessage from '../components/ErrorMessage';
 import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
+import { useSocket } from '../context/SocketContext';
 
 export default function NgoNearby() {
   const { coords: gpsCoords, error: geoError, loading: geoLoading, locate } = useGeolocation();
+  const { socket } = useSocket();
 
   const [center, setCenter] = useState(null); // where we search: from GPS, a map click, or the default city
   const [radiusKm, setRadiusKm] = useState(10);
@@ -60,6 +62,40 @@ export default function NgoNearby() {
   useEffect(() => {
     load();
   }, [load]); // reload whenever the centre or radius changes
+
+  // LIVE UPDATES: react to events pushed by the server.
+  useEffect(() => {
+    if (!socket || !center) return;
+
+    function handleNew(listing) {
+      // Only show it if it's inside MY search radius.
+      const km = distanceKm(center.lat, center.lng, ...listingLatLng(listing));
+      if (km > radiusKm) return;
+      setListings((previous) =>
+        previous.some((l) => l._id === listing._id) ? previous : [listing, ...previous] // avoid duplicates
+      );
+      setNotice(`New food nearby: ${listing.title}`);
+    }
+
+    function handleUpdated(listing) {
+      // Claimed, completed or cancelled means it's no longer available to anyone: remove it.
+      if (listing.status !== 'available') {
+        setListings((previous) => previous.filter((l) => l._id !== listing._id));
+      }
+    }
+
+    socket.on('listing:new', handleNew);
+    socket.on('listing:updated', handleUpdated);
+    // We may have missed events while disconnected, so re-fetch the truth after a reconnect.
+    socket.io.on('reconnect', load);
+
+    // CLEANUP: remove exactly the handlers we added, or events will be handled twice.
+    return () => {
+      socket.off('listing:new', handleNew);
+      socket.off('listing:updated', handleUpdated);
+      socket.io.off('reconnect', load);
+    };
+  }, [socket, center, radiusKm, load]);
 
   async function handleClaim(listing) {
     if (!window.confirm(`Claim "${listing.title}"? You're committing to collect it.`)) return;

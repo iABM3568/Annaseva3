@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/errors';
@@ -8,14 +8,17 @@ import Loader from '../components/Loader';
 import ErrorMessage from '../components/ErrorMessage';
 import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
+import { useSocket } from '../context/SocketContext';
 
 export default function DonorDashboard() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true); // state 1: loading
   const [error, setError] = useState(''); // state 2: error
   const [notice, setNotice] = useState('');
+  const { socket } = useSocket();
 
-  async function load() {
+  // useCallback: the SAME function between renders, so it is safe in effect dependency arrays.
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -26,11 +29,31 @@ export default function DonorDashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+
+  // LIVE UPDATES: an NGO claimed one of my listings (or it changed elsewhere, e.g. another tab).
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleUpdated(listing) {
+      // Swap the changed listing in place. Ignore ones that aren't on this screen.
+      setListings((previous) => previous.map((l) => (l._id === listing._id ? listing : l)));
+      if (listing.status === 'claimed') {
+        setNotice(`${listing.claimedBy?.organization || listing.claimedBy?.name || 'An NGO'} claimed "${listing.title}"`);
+      }
+    }
+
+    socket.on('listing:updated', handleUpdated);
+    socket.io.on('reconnect', load); // re-fetch the truth after a reconnect
+    return () => {
+      socket.off('listing:updated', handleUpdated);
+      socket.io.off('reconnect', load);
+    };
+  }, [socket, load]);
 
   // action is 'complete' or 'cancel'. The server decides if it's allowed.
   async function act(id, action) {
