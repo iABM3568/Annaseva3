@@ -68,3 +68,27 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 
 - **Decision:** `validate(schema)` middleware parses input, rejects with `400` and a list of `{ field, message }`, and passes only cleaned data as `req.valid`. Controllers never read `req.body` directly.
 - **Why:** "Parse, don't trust." Zod strips unknown keys, and controllers list fields explicitly, so mass assignment (`"role": "admin"`, `"isAdmin": true`) is blocked twice.
+
+## D-013 — Reference the donor by id instead of embedding (Day 3)
+
+- **Decision:** A listing stores `donor: ObjectId` (ref `User`), not a copy of the donor's name/organisation.
+- **Why:** One source of truth. If a donor renames their organisation, every listing is automatically correct.
+- **Trade-off:** Reads need an extra lookup (`populate('donor', 'name organization')`). Embedding would be faster to read but can go stale. Revisit only if `populate` shows up as a measured bottleneck.
+- **Security:** `donor` is always taken from `req.user.id` (the verified token), never from the request body.
+
+## D-014 — Expiry is computed, not stored (Day 3)
+
+- **Decision:** There is no `"expired"` status. Queries filter `expiresAt: { $gt: new Date() }` using the **server** clock; `/mine` returns a computed `isExpired` virtual.
+- **Why:** A computed value can't go out of date, and we need no cron job to flip statuses. Expired listings stay in the database for history and stats.
+- **Trade-off:** Every "available" query must remember the expiry filter. `.lean()` results don't include virtuals, so lean queries compute it themselves if they need it.
+
+## D-015 — GeoJSON `[longitude, latitude]` built by the server; 2dsphere index (Day 3)
+
+- **Decision:** The API accepts friendly `latitude`/`longitude`; the controller builds `{ type: 'Point', coordinates: [lng, lat] }`. A `2dsphere` index powers `$near` + `$maxDistance` (metres), nearest first, capped at 50 results.
+- **Why:** Clients never have to know GeoJSON's longitude-first order, which removes the #1 geo bug at the edge.
+
+## D-016 — Listing rules live in one constants file; every list is bounded (Day 3)
+
+- **Decision:** `server/constants/listing.js` holds food types, statuses, length/quantity limits, the 24-hour rule and result limits. The Mongoose model and the Zod validator both import it. `/nearby` returns at most 50 rows; `/mine` and `/claimed` at most 100.
+- **Why:** The same rule written twice eventually drifts. An unbounded result set can slow the server and the browser.
+- **Also:** `preparedAt` may not be more than 5 minutes in the future (tolerance for device clocks).
