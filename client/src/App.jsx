@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DonorDashboard from './pages/DonorDashboard';
+import NewListing from './pages/NewListing';
 import NgoNearby from './pages/NgoNearby';
 import NotFound from './pages/NotFound';
 
@@ -19,6 +20,7 @@ export default function App() {
 
         {/* Role-protected pages: the real security is on the server; this is for a clean experience. */}
         <Route path="/donor" element={<ProtectedRoute role="donor"><DonorDashboard /></ProtectedRoute>} />
+        <Route path="/donor/new" element={<ProtectedRoute role="donor"><NewListing /></ProtectedRoute>} />
         <Route path="/ngo" element={<ProtectedRoute role="ngo"><NgoNearby /></ProtectedRoute>} />
 
         {/* path="*" matches anything else */}
