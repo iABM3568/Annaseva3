@@ -118,3 +118,9 @@ One entry per meaningful technical decision: what, why, and what we gave up.
   | Without | COLLSCAN | 20,015 | 15 | 13 ms |
 
 - **Lesson:** the index cut work by ~1,300×, but at this size the time difference is only milliseconds. Indexes matter as data grows; don't optimise what you haven't measured.
+
+## D-020 — Deploy a skeleton early (Day 5)
+
+- **Decision:** Deploy on Day 5 with only login/register: API on Render (`server/`), client on Vercel (`client/`, SPA rewrite in `vercel.json`), production data in Atlas database `annaseva` (dev stays `annaseva_dev`).
+- **Why:** First-deploy problems (CORS origin, env vars, SPA 404s on refresh, cold starts, case-sensitive imports on Linux) are far easier to debug when the app is tiny. After this, every deploy is just `git push`.
+- **Trade-off:** Render's free tier has no fixed IP, so Atlas allows `0.0.0.0/0`; the database is still protected by username/password and TLS (see D-009). Production uses its own new `JWT_SECRET`.
