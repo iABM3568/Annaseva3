@@ -1,31 +1,44 @@
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
-// Minimal for now: Day 6 expands it.
+// Role-aware: each role only sees the links that make sense for it.
+// (Hiding links is UX only; the server's restrictTo is the real check.)
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout() {
-    logout(); // clears localStorage and the user in Context
-    navigate('/login', { replace: true });
+    logout();
+    navigate('/login');
   }
 
   return (
-    <nav className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-      <Link to="/" className="text-lg font-bold text-green-700">AnnaSeva</Link>
-      <div className="flex items-center gap-4 text-sm">
-        {user ? (
-          <>
-            <Link to={user.role === 'donor' ? '/donor' : '/ngo'}>{user.name}</Link>
-            <button type="button" onClick={handleLogout} className="rounded border border-gray-300 px-3 py-1">
-              Log out
-            </button>
-          </>
-        ) : (
+    <nav className="flex flex-wrap items-center justify-between gap-2 bg-green-700 px-4 py-3 text-white">
+      <Link to="/" className="text-lg font-bold">AnnaSeva</Link>
+
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        {!user && (
           <>
             <Link to="/login">Log in</Link>
-            <Link to="/register" className="rounded bg-green-600 px-3 py-1 text-white">Register</Link>
+            <Link to="/register">Register</Link>
+          </>
+        )}
+        {user?.role === 'donor' && (
+          <>
+            <Link to="/donor">My listings</Link>
+            <Link to="/donor/new">Post food</Link>
+          </>
+        )}
+        {user?.role === 'ngo' && (
+          <>
+            <Link to="/ngo">Find food</Link>
+            <Link to="/ngo/claims">My claims</Link>
+          </>
+        )}
+        {user && (
+          <>
+            <span className="opacity-80">{user.name}</span>
+            <button type="button" onClick={handleLogout} className="underline">Log out</button>
           </>
         )}
       </div>
