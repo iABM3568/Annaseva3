@@ -100,7 +100,8 @@ npm install
 cp .env.example .env    # the defaults already point at localhost:5000
 npm run dev             # open http://localhost:5173
 
-# 3) Optional: demo data (only runs on a database whose name ends in _dev)
+# 3) Optional: demo data (terminal 3, from the repo root; the server can keep running)
+#    Only runs on a database whose name ends in _dev.
 cd server
 node scripts/seed.js 15 # prints two demo logins (donor and NGO)
 ```
