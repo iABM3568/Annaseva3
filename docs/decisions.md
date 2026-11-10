@@ -92,3 +92,29 @@ One entry per meaningful technical decision: what, why, and what we gave up.
 - **Decision:** `server/constants/listing.js` holds food types, statuses, length/quantity limits, the 24-hour rule and result limits. The Mongoose model and the Zod validator both import it. `/nearby` returns at most 50 rows; `/mine` and `/claimed` at most 100.
 - **Why:** The same rule written twice eventually drifts. An unbounded result set can slow the server and the browser.
 - **Also:** `preparedAt` may not be more than 5 minutes in the future (tolerance for device clocks).
+
+## D-017 — Atomic claim instead of check-then-update (Day 4)
+
+- **Decision:** Every state change (claim, complete, cancel) is ONE `findOneAndUpdate` whose **filter is the guard**: claim matches only `{ _id, status: 'available', expiresAt > now }`; complete only `{ _id, donor: me, status: 'claimed' }`; cancel only `{ _id, donor: me, status ∈ [available, claimed] }`.
+- **Why:** Check-then-update (`findById` → check → `save`) leaves a gap where many requests pass the check. MongoDB applies a single-document update atomically, so only one request can still match.
+- **Evidence (Lab 1, 20 simultaneous claims via `Promise.all`, 3 runs each):**
+  - Broken check-then-update (50 ms gap): **18 × 200, 2 × 409** in every run, i.e. 18 NGOs "won" the same food.
+  - Atomic `findOneAndUpdate`: **1 × 200, 19 × 409** in every run.
+- **Scales:** The guarantee lives in the database, not in server memory, so it still holds with several server instances.
+- **Note:** `findOneAndUpdate` skips schema validators by default. Safe here because the update values are fixed by us; add `{ runValidators: true }` if user input is ever written this way.
+
+## D-018 — 400 / 403 / 404 / 409, and don't leak existence (Day 4)
+
+- `400` malformed id (`validateId`, before the DB is touched) · `403` wrong role · `404` no such listing **or not yours** · `409` exists but its state forbids the action.
+- On failure, `failTransition` checks existence **only within what the caller may see** (`{ _id, donor: me }` for donors). Donor B touching donor A's listing gets `404`, so B learns nothing about A's data.
+
+## D-019 — Index evidence: measure before optimising (Day 4)
+
+- **Lab 2** (`scripts/explain-lab.js`, 15 demo listings + 20,000 noise listings, query "listings of this donor"):
+
+  | | Plan | Docs examined | Returned | Time |
+  |---|---|---|---|---|
+  | With `donor_1_createdAt_-1` | IXSCAN | 15 | 15 | 0 ms |
+  | Without | COLLSCAN | 20,015 | 15 | 13 ms |
+
+- **Lesson:** the index cut work by ~1,300×, but at this size the time difference is only milliseconds. Indexes matter as data grows; don't optimise what you haven't measured.

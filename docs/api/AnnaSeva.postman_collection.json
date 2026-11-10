@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AnnaSeva",
-    "description": "AnnaSeva API. Day 2 auth and Day 3 listings test tables. Register/Login auto-save {{token}} in Postman; in Thunder Client paste the token into the collection variable.",
+    "description": "AnnaSeva API. Day 2 auth and Day 3 listings and Day 4 claim test tables. Register/Login auto-save {{token}} in Postman; in Thunder Client paste the token into the collection variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -43,6 +43,10 @@
     },
     {
       "key": "futurePrepared",
+      "value": ""
+    },
+    {
+      "key": "listingId",
       "value": ""
     }
   ],
@@ -1081,6 +1085,186 @@
                 }
               }
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Claim / complete / cancel (Day 4)",
+      "description": "Set listingId (copy an _id from Nearby). Demo logins from `node scripts/seed.js`: donor.demo@example.com / ngo.demo@example.com. For concurrency use `node scripts/race-test.js <id> <ngoToken>`; a single click can't show a race.",
+      "item": [
+        {
+          "name": "1. Claim (NGO)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ngoToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/{{listingId}}/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "{{listingId}}",
+                "claim"
+              ]
+            },
+            "description": "200 status claimed; again -> 409"
+          }
+        },
+        {
+          "name": "2. Claim with id abc",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ngoToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/abc/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "abc",
+                "claim"
+              ]
+            },
+            "description": "400 Invalid listing id"
+          }
+        },
+        {
+          "name": "3. Claim non-existent id",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ngoToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/000000000000000000000000/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "000000000000000000000000",
+                "claim"
+              ]
+            },
+            "description": "404"
+          }
+        },
+        {
+          "name": "4. Claim with donor token",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{donorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/{{listingId}}/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "{{listingId}}",
+                "claim"
+              ]
+            },
+            "description": "403"
+          }
+        },
+        {
+          "name": "5. Complete (owner donor)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{donorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/{{listingId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "{{listingId}}",
+                "complete"
+              ]
+            },
+            "description": "200 completed if claimed; 409 if not claimed; 404 if not your listing"
+          }
+        },
+        {
+          "name": "6. Cancel (owner donor)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{donorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listings/{{listingId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listings",
+                "{{listingId}}",
+                "cancel"
+              ]
+            },
+            "description": "200 cancelled if available/claimed; 409 if completed"
           }
         }
       ]

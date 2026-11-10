@@ -125,3 +125,32 @@ Register → Login → `protect` → `restrictTo`:
 >
 
 **Tomorrow's first task:**
+
+---
+
+## Day 4: The Claim System and the System-Design Lab   (2026-11-10)
+
+### Lab 1: race condition (20 simultaneous claims, `node scripts/race-test.js <id> <ngoToken>`)
+
+| Version | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Broken (check-then-update) | 18 × 200, 2 × 409 | 18 × 200, 2 × 409 | 18 × 200, 2 × 409 |
+| Atomic (`findOneAndUpdate`) | 1 × 200, 19 × 409 ✅ | 1 × 200, 19 × 409 ✅ | 1 × 200, 19 × 409 ✅ |
+
+### Lab 2: index (`node scripts/explain-lab.js`)
+
+| | Plan | Docs examined | Time |
+|---|---|---|---|
+| With donor index | IXSCAN | 15 | 0 ms |
+| Without | COLLSCAN | 20,015 | 13 ms |
+
+### What I learned (my own words)
+>
+
+### Self-ask answers
+>
+
+### Explain-back (atomic claim, 3 sentences)
+>
+
+**Tomorrow's first task:**
